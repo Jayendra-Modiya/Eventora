@@ -54,6 +54,7 @@ async function sendOtpEmail(email, otp, type) {
         console.log(`OTP sent to ${email} for ${type}`);
     } catch (error) {
         console.error('Error sending OTP email:', error);
+        throw error; // Rethrow so the caller (bookingController) can return a proper error to the frontend
     }
 }
 
