@@ -3,18 +3,13 @@ const nodemailer = require('nodemailer');
 const emailUser = process.env.EMAIL_USER;
 const emailPass = process.env.EMAIL_PASS;
 
-const transporter = emailUser && emailPass
-    ? nodemailer.createTransport({
-        host: 'smtp.gmail.com',
-        port: 587,
-        secure: false,
-        family: 4,
-        auth: {
-            user: emailUser,
-            pass: emailPass
-        }
-    })
-    : null;
+const transporter = emailUser && emailPass ? nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: emailUser,
+        pass: emailPass
+    }
+}) : null;
 
 if (transporter) {
     transporter.verify((error, success) => {
