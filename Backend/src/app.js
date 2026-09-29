@@ -7,11 +7,11 @@ const bookingRoutes = require('./routes/bookings.js')
 
 
 const app = express();
-app.use(express.json());
 app.use(cors({
-    origin: ["http://localhost:3000", "https://eventora-ten-zeta.vercel.app/"],
+    origin: ["http://localhost:5173", "http://localhost:3000"],
     credentials: true
-}))
+}));
+app.use(express.json());
 
 //Routes
 app.use("/api/auth",authRoutes);
