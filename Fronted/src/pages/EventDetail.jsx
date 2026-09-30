@@ -52,6 +52,15 @@ const EventDetail = () => {
                 setEvent({ ...event, availableSeats: event.availableSeats - 1 });
             }
         } catch (err) {
+            if (err.response?.status === 401) {
+                // A token from before account verification (or an expired token)
+                // cannot authorize bookings. Remove it so the user can sign in
+                // and receive a fresh token.
+                localStorage.removeItem('token');
+                localStorage.removeItem('userInfo');
+                navigate('/login', { state: { from: `/events/${id}` } });
+                return;
+            }
             setError(err.response?.data?.message || 'Booking failed');
         } finally {
             setBookingLoading(false);

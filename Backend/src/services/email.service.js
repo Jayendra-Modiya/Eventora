@@ -1,5 +1,17 @@
-const resendApiKey = process.env.RESEND_API_KEY;
-const emailFrom = process.env.EMAIL_FROM || 'Eventora <onboarding@resend.dev>';
+const nodemailer = require('nodemailer');
+
+const emailUser = process.env.EMAIL_USER;
+const emailPass = process.env.EMAIL_PASS;
+
+const transporter = emailUser && emailPass
+    ? nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: emailUser,
+            pass: emailPass
+        }
+    })
+    : null;
 
 function escapeHtml(value = '') {
     return String(value).replace(/[&<>"']/g, (character) => ({
@@ -12,25 +24,16 @@ function escapeHtml(value = '') {
 }
 
 async function sendEmail({ to, subject, html }) {
-    if (!resendApiKey) {
-        throw new Error('Email service is not configured. Set RESEND_API_KEY in the backend environment.');
+    if (!transporter) {
+        throw new Error('Email service is not configured. Set EMAIL_USER and EMAIL_PASS in the backend environment.');
     }
 
-    const response = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-            Authorization: `Bearer ${resendApiKey}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ from: emailFrom, to: [to], subject, html })
+    await transporter.sendMail({
+        from: `Eventora <${emailUser}>`,
+        to,
+        subject,
+        html
     });
-
-    const result = await response.json().catch(() => ({}));
-    if (!response.ok) {
-        const reason = result.message || result.name || `HTTP ${response.status}`;
-        throw new Error(`Email provider rejected the message: ${reason}`);
-    }
-    return result;
 }
 
 async function sendOtpEmail(email, otp, type) {
@@ -54,7 +57,7 @@ async function sendOtpEmail(email, otp, type) {
             </div>
         `
     });
-    console.log(`OTP email accepted by provider for ${email} (${type})`);
+    console.log(`OTP email sent to ${email} (${type})`);
 }
 
 async function sendBookingEmail(userEmail, userName, eventTitle) {
@@ -68,9 +71,9 @@ async function sendBookingEmail(userEmail, userName, eventTitle) {
                 <p>Thank you for choosing Eventora.</p>
             `
         });
-        console.log('Booking confirmation email accepted by provider for', userEmail);
+        console.log('Booking confirmation email sent to', userEmail);
     } catch (error) {
-        // Confirmation has already been saved; email trouble should not undo it.
+        // Confirmation is already saved, so email trouble should not undo it.
         console.error('Failed to send booking confirmation email:', error.message);
     }
 }

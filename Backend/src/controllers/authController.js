@@ -140,14 +140,26 @@ async function verifyOtp(req, res) {
             { new: true }
         );
 
+        if (!user) {
+            await OTP.deleteMany({ email, action: 'account_verification' });
+            return res.status(404).json({ message: 'Account not found' });
+        }
+
         await OTP.deleteMany({ email, action: 'account_verification' });
 
+        const token = jwt.sign(
+            { id: user._id, username: user.username },
+            process.env.JWT_SECRET,
+            { expiresIn: '1d' }
+        );
+
         res.json({
-            message: 'Account verified successfully. You can now login.',
+            message: 'Account verified successfully.',
             _id: user._id,
             name: user.username,
             email: user.email,
-            role: user.role
+            role: user.role,
+            token
         });
     } catch (error) {
         console.error('OTP verification error:', error.message);
