@@ -9,7 +9,7 @@ const bookingRoutes = require('./routes/bookings.js')
 const app = express();
 app.use(express.json());
 app.use(cors({
-    origin: ["http://localhost:5173"],
+    origin: ["https://eventora-eight-rho.vercel.app/"],
     credentials: true
 }))
 
