@@ -1,17 +1,23 @@
 const nodemailer = require('nodemailer');
 
-const emailUser = process.env.EMAIL_USER;
-const emailPass = process.env.EMAIL_PASS;
+function createTransporter() {
+    const emailUser = process.env.EMAIL_USER;
+    const emailPass = process.env.EMAIL_PASS;
 
-const transporter = emailUser && emailPass
-    ? nodemailer.createTransport({
-        service: 'gmail',
+    if (!emailUser || !emailPass) return null;
+
+    return nodemailer.createTransport({
+        host: 'smtp.gmail.com',
+        port: 465,
+        secure: true, // use SSL
         auth: {
             user: emailUser,
             pass: emailPass
-        }
-    })
-    : null;
+        },
+        connectionTimeout: 10000, // 10 seconds
+        socketTimeout: 10000
+    });
+}
 
 function escapeHtml(value = '') {
     return String(value).replace(/[&<>"']/g, (character) => ({
@@ -24,6 +30,9 @@ function escapeHtml(value = '') {
 }
 
 async function sendEmail({ to, subject, html }) {
+    const emailUser = process.env.EMAIL_USER;
+    const transporter = createTransporter();
+
     if (!transporter) {
         throw new Error('Email service is not configured. Set EMAIL_USER and EMAIL_PASS in the backend environment.');
     }
