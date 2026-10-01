@@ -7,14 +7,14 @@ function createTransporter() {
     if (!emailUser || !emailPass) return null;
 
     return nodemailer.createTransport({
-        host: 'smtp.gmail.com',
+        host: 'smtp-relay.brevo.com',  // Brevo (reliable on Render free tier)
         port: 587,
-        secure: false,  // use STARTTLS (port 587) — Render free tier blocks port 465
+        secure: false,
         requireTLS: true,
-        family: 4,      // Force IPv4
+        family: 4,
         auth: {
-            user: emailUser,
-            pass: emailPass
+            user: emailUser,  // Your Brevo account email
+            pass: emailPass   // Your Brevo SMTP key
         },
         connectionTimeout: 15000,
         socketTimeout: 15000
