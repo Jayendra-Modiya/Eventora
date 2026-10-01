@@ -8,15 +8,16 @@ function createTransporter() {
 
     return nodemailer.createTransport({
         host: 'smtp.gmail.com',
-        port: 465,
-        secure: true, // use SSL
-        family: 4,    // Force IPv4 — Render free tier blocks IPv6 outbound
+        port: 587,
+        secure: false,  // use STARTTLS (port 587) — Render free tier blocks port 465
+        requireTLS: true,
+        family: 4,      // Force IPv4
         auth: {
             user: emailUser,
             pass: emailPass
         },
-        connectionTimeout: 10000, // 10 seconds
-        socketTimeout: 10000
+        connectionTimeout: 15000,
+        socketTimeout: 15000
     });
 }
 
