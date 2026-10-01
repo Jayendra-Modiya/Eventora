@@ -10,6 +10,7 @@ function createTransporter() {
         host: 'smtp.gmail.com',
         port: 465,
         secure: true, // use SSL
+        family: 4,    // Force IPv4 — Render free tier blocks IPv6 outbound
         auth: {
             user: emailUser,
             pass: emailPass
