@@ -1,74 +1,43 @@
-const nodemailer = require('nodemailer');
-
-function createTransporter() {
-    const emailUser = process.env.EMAIL_USER;
-    const emailPass = process.env.EMAIL_PASS;
-
-    if (!emailUser || !emailPass) return null;
-
-    return nodemailer.createTransport({
-        host: 'smtp-relay.brevo.com',  // Brevo (reliable on Render free tier)
-        port: 587,
-        secure: false,
-        requireTLS: true,
-        family: 4,
-        auth: {
-            user: emailUser,  // Your Brevo account email
-            pass: emailPass   // Your Brevo SMTP key
-        },
-        connectionTimeout: 15000,
-        socketTimeout: 15000
-    });
-}
-
+const { Resend } = require('resend');
 function escapeHtml(value = '') {
-    return String(value).replace(/[&<>"']/g, (character) => ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#39;'
-    })[character]);
-}
+     return String(value).replace(/[&<>"']/g, (character) => ({
+         '&': '&amp;',
+         '<': '&lt;',
+         '>': '&gt;',
+         '"': '&quot;',
+         "'": '&#39;'
+        })[character]); }
 
-async function sendEmail({ to, subject, html }) {
-    const emailUser = process.env.EMAIL_USER;
-    const transporter = createTransporter();
+// Create Resend client
+function createResendClient() {
+     const apiKey = process.env.RESEND_API_KEY;
+     if (!apiKey) {
+         return null;
+     }
 
-    if (!transporter) {
-        throw new Error('Email service is not configured. Set EMAIL_USER and EMAIL_PASS in the backend environment.');
+     return new Resend(apiKey);
     }
-
-    await transporter.sendMail({
-        from: `Eventora <${emailUser}>`,
-        to,
-        subject,
-        html
-    });
+    // Common email sending function
+async function sendEmail({ to, subject, html }) {
+     const resend = createResendClient();
+     if (!resend) {
+        throw new Error(
+            'Email service is not configured. Set RESEND_API_KEY in the backend environment.'
+        );
+    }
+    // Use your verified domain email in production.
+   // For testing, Resend provides onboarding@resend.dev.
+   const fromEmail = process.env.EMAIL_FROM || 'Eventora <onboarding@resend.dev>';
+   const { data, error } = await resend.emails.send({
+   from: fromEmail,
+   to: [to],
+   subject,
+   html
+});
+if (error) {
+    throw new Error(error.message || 'Failed to send email');
 }
-
-async function sendOtpEmail(email, otp, type) {
-    const isAccountVerification = type === 'account_verification';
-    const title = isAccountVerification ? 'Verify your Eventora Account' : 'Eventora Booking Verification';
-    const message = isAccountVerification
-        ? 'Use this code to verify your Eventora account.'
-        : 'Use this code to verify and confirm your event booking.';
-
-    await sendEmail({
-        to: email,
-        subject: title,
-        html: `
-            <div style="font-family: Arial, sans-serif; text-align: center; padding: 20px;">
-                <h2 style="color: #111;">${title}</h2>
-                <p style="color: #555; font-size: 16px;">${message}</p>
-                <div style="margin: 20px auto; padding: 15px; font-size: 24px; font-weight: bold; background: #f4f4f4; width: max-content; letter-spacing: 5px;">
-                    ${escapeHtml(otp)}
-                </div>
-                <p style="color: #999; font-size: 12px;">This code expires in 5 minutes. If you didn't request this, please ignore this email.</p>
-            </div>
-        `
-    });
-    console.log(`OTP email sent to ${email} (${type})`);
+return data;
 }
 
 async function sendBookingEmail(userEmail, userName, eventTitle) {
@@ -90,7 +59,5 @@ async function sendBookingEmail(userEmail, userName, eventTitle) {
 }
 
 module.exports = {
-    sendOtpEmail,
-    sendOTPEmail: sendOtpEmail,
     sendBookingEmail
 };

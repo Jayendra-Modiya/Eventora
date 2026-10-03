@@ -1,37 +1,10 @@
 const bookingModel = require('../models/bookingmodel');
 const eventModel = require('../models/eventmodel');
-const otpModel = require('../models/otpmodel');
-const { sendBookingEmail, sendOtpEmail } = require('../services/email.service.js');
-
-const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
-
-async function sendBookingOTP(req, res){
-    try {
-        console.log('[sendBookingOTP] EMAIL_USER:', process.env.EMAIL_USER ? 'SET' : 'NOT SET');
-        console.log('[sendBookingOTP] EMAIL_PASS:', process.env.EMAIL_PASS ? 'SET (length: ' + process.env.EMAIL_PASS.length + ')' : 'NOT SET');
-        const otp = generateOTP();
-        await otpModel.findOneAndDelete({ email: req.user.email, action: 'event_booking' });
-        await otpModel.create({ email: req.user.email, otp, action: 'event_booking' });
-        await sendOtpEmail(req.user.email, otp, 'event_booking');
-        res.json({ message: 'OTP sent successfully' });
-    } catch (error) {
-        console.error('[sendBookingOTP] FULL ERROR:', error);
-        console.error('[sendBookingOTP] error.message:', error.message);
-        console.error('[sendBookingOTP] error.code:', error.code);
-        console.error('[sendBookingOTP] error.responseCode:', error.responseCode);
-        res.status(500).json({ message: 'Error sending OTP', error: error.message });
-    }
-};
+const { sendBookingEmail } = require('../services/email.service.js');
 
 async function bookEvent(req, res){
     try {
-        const { eventId, otp } = req.body;
-
-        // Verify OTP explicitly before proceeding
-        const validOTP = await otpModel.findOne({ email: req.user.email, otp, action: 'event_booking' });
-        if (!validOTP) {
-            return res.status(400).json({ message: 'Invalid or expired OTP for booking' });
-        }
+        const { eventId } = req.body;
 
         const event = await eventModel.findById(eventId);
         if (!event) return res.status(404).json({ message: 'Event not found' });
@@ -49,8 +22,6 @@ async function bookEvent(req, res){
             paymentStatus: 'not_paid',
             amount: event.ticketPrice
         });
-
-        await otpModel.deleteOne({ _id: validOTP._id }); // cleanup
 
         res.status(201).json({ message: 'Booking request submitted', booking });
     } catch (error) {
@@ -130,7 +101,6 @@ async function cancelBooking(req, res){
 };
 
 module.exports ={
-    sendBookingOTP,
     bookEvent,
     confirmBooking,
     getMyBookings,
